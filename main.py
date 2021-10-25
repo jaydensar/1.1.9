@@ -1,12 +1,14 @@
 import turtle
-turtle.color('blue')
-turtle.shape('circle')
-turtle.penup()
-turtle.tracer(0)
 
 mouse_down = False
 count = 0
 root = turtle.getcanvas().winfo_toplevel()
+
+# initial state
+turtle.color('blue')
+turtle.shape('circle')
+turtle.penup()
+turtle.tracer(0)
 
 def goto(x,y):
     global count
