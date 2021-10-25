@@ -4,6 +4,21 @@ turtle.speed(0)
 turtle.shape('circle')
 
 value=False
+move=False
+count=0
+
+def goto(x,y):
+    global move
+    global count
+    if move:
+        print("moving to", x, y)
+        turtle.goto(x,y)
+        count+=1
+        print(count)
+        move=False
+    else:
+        move=True
+        print("not moving")
 
 def mouse_down(mouse):
     global value
@@ -11,7 +26,7 @@ def mouse_down(mouse):
     x=mouse.x-turtle.window_width()/2
     y=mouse.y-turtle.window_height()/2
     turtle.penup()
-    turtle.goto(x, -y)
+    goto(x, -y)
     turtle.pendown()
 def mouse_up(mouse):
     global value
@@ -20,8 +35,8 @@ def motion(mouse):
     if value:
         x=mouse.x-turtle.window_width()/2
         y=mouse.y-turtle.window_height()/2
-        print(x,y)
-        turtle.goto(x, -y)
+        # print(x,y)
+        goto(x, -y)
 def scroll(mouse):
     if mouse.delta<0:
         turtle.pensize(turtle.pensize()-0.5)
