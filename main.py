@@ -2,6 +2,7 @@ import turtle
 
 mouse_down = False
 count = 0
+stroke_history = []
 root = turtle.getcanvas().winfo_toplevel()
 
 # initial state
@@ -23,6 +24,7 @@ def mouse_down_action(mouse):
     mouse_down=True
     x=mouse.x-turtle.window_width()/2
     y=mouse.y-turtle.window_height()/2
+    stroke_history.insert(0, 0)
     turtle.penup()
     goto(x, -y)
     turtle.pendown()
@@ -33,6 +35,8 @@ def mouse_up_action(_mouse):
 
 def motion_action(mouse):
     if mouse_down:
+        stroke_history[0] = stroke_history[0] + 1
+        print(stroke_history)
         x=mouse.x-turtle.window_width()/2
         y=mouse.y-turtle.window_height()/2
         goto(x, -y)
@@ -44,9 +48,9 @@ def scroll_action(mouse):
         turtle.pensize(turtle.pensize()+0.5)
 
 def undo_action(_mouse):
-    print(int(round(count * 0.05, -1)))
-    for _ in range(int(round(count * 0.05, -1)) + 1):
+    for _ in range(stroke_history[0]):
         turtle.undo()
+    stroke_history.pop(0)
     turtle.update()
 
 root.bind('<ButtonPress-1>', mouse_down_action)
