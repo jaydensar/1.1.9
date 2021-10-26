@@ -1,4 +1,17 @@
 import turtle
+import asyncio
+import websockets
+
+socket = None
+
+async def connect():
+    global socket
+    async with websockets.connect("ws://localhost:8765") as websocket:
+        await websocket.send("Hello world!")
+        socket = websocket
+        await websocket.recv()
+
+asyncio.run(connect())
 
 mouse_down = False
 count = 0
@@ -49,6 +62,9 @@ def motion_action(mouse):
     x=mouse.x-turtle.window_width()/2
     y=mouse.y-turtle.window_height()/2
     goto(x, -y)
+    if socket is not None:
+        socket.send(f"{x},{-y}")
+        print("sent to socket")
 
 def scroll_action(mouse):
     if mouse.delta<0:
