@@ -44,7 +44,9 @@ def scroll_action(mouse):
         turtle.pensize(turtle.pensize()+0.5)
 
 def undo_action(_mouse):
-    turtle.undo()
+    print(int(round(count * 0.05, -1)))
+    for _ in range(int(round(count * 0.05, -1)) + 1):
+        turtle.undo()
     turtle.update()
 
 root.bind('<ButtonPress-1>', mouse_down_action)
