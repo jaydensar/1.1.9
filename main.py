@@ -41,11 +41,14 @@ def mouse_up_action(_mouse):
 
 def motion_action(mouse):
     if mouse_down:
-        stroke_history[0] = stroke_history[0] + 1
-        print(stroke_history)
-        x=mouse.x-turtle.window_width()/2
-        y=mouse.y-turtle.window_height()/2
-        goto(x, -y)
+        turtle.pendown()
+    else:
+        turtle.penup()
+    stroke_history[0] = stroke_history[0] + 1
+    print(stroke_history)
+    x=mouse.x-turtle.window_width()/2
+    y=mouse.y-turtle.window_height()/2
+    goto(x, -y)
 
 def scroll_action(mouse):
     if mouse.delta<0:
