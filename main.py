@@ -10,6 +10,12 @@ turtle.shape('circle')
 turtle.penup()
 turtle.tracer(0)
 
+def round_min(value):
+    if value>=0.5:
+        return value
+    else:
+        return 0.5
+
 def goto(x,y):
     global count
     print("moving to", x, y)
@@ -33,15 +39,21 @@ def mouse_up_action(_mouse):
 
 def motion_action(mouse):
     if mouse_down:
-        x=mouse.x-turtle.window_width()/2
-        y=mouse.y-turtle.window_height()/2
-        goto(x, -y)
+        turtle.pendown()
+    else:
+        turtle.penup()
+    x=mouse.x-turtle.window_width()/2
+    y=mouse.y-turtle.window_height()/2
+    goto(x, -y)
 
 def scroll_action(mouse):
     if mouse.delta<0:
-        turtle.pensize(turtle.pensize()-0.5)
+        turtle.pensize(round_min(turtle.pensize()-0.5))
+        turtle.shapesize(round_min(turtle.pensize()-0.5))
     else:
         turtle.pensize(turtle.pensize()+0.5)
+        turtle.shapesize(turtle.pensize()+0.5)
+    print(turtle.pensize(),turtle.shapesize())
 
 def undo_action(_mouse):
     print(int(round(count * 0.05, -1)))
