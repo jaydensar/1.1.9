@@ -106,13 +106,8 @@ socket_draw_queue = Queue()
 def socket_thread(queue):
     async def socket():
         async def send():
-            await asyncio.sleep(0.1)
-            try:
-                obj = queue.get(False)
-            except Empty:
-                obj = None
-            if obj is not None:
-                await websocket.send(json.dumps(obj))
+            obj = queue.get()
+            await websocket.send(json.dumps(obj))
         async def receive():
             a = await websocket.recv()
             data = json.loads(a)
@@ -122,8 +117,9 @@ def socket_thread(queue):
             print(f"received {data}")
         async with websockets.connect("ws://localhost:8765") as websocket:
             while True:
-                await send()
-                await receive()
+                await asyncio.sleep(0.001)
+                asyncio.create_task(send())
+                asyncio.create_task(receive())
                 
     asyncio.run(socket())
 
