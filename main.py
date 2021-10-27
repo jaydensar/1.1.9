@@ -1,10 +1,11 @@
 import json
+from os import read
 import uuid
 import turtle
 import asyncio
 import websockets
 from threading import Thread
-from queue import Queue
+from queue import Empty, Queue
 
 mouse_down = False
 count = 0
@@ -97,16 +98,26 @@ socket_draw_queue = Queue()
 
 def socket_thread(queue):
     async def socket():
+        async def send():
+            await asyncio.sleep(0.1)
+            try:
+                obj = queue.get(False)
+            except Empty:
+                obj = None
+            if obj is not None:
+                await websocket.send(json.dumps(obj))
+        async def receive():
+            a = await websocket.recv()
+            data = json.loads(a)
+            if data['socket_id'] == socket_id:
+                return
+            socket_draw_queue.put(data)
+            print(f"received {data}")
         async with websockets.connect("ws://localhost:8765") as websocket:
             while True:
-                obj = queue.get()
-                await websocket.send(json.dumps(obj))
-                a = await websocket.recv()
-                data = json.loads(a)
-                if data['socket_id'] == socket_id:
-                    continue
-                socket_draw_queue.put(data)
-                print(f"received {data}")
+                await send()
+                await receive()
+                
     asyncio.run(socket())
 
 thread = Thread(target=socket_thread, args=(socket_queue,))
