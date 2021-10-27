@@ -1,18 +1,19 @@
 import websockets
 import asyncio
 
-CLIENTS = set()
+clients = set()
 
 async def handler(websocket, path):
-    CLIENTS.add(websocket)
+    clients.add(websocket)
     try:
         async for msg in websocket:
+            print(msg)
             await asyncio.gather(
-                *[ws.send(msg) for ws in CLIENTS],
+                *[ws.send(msg) for ws in clients],
                 return_exceptions=False,
             )
     finally:
-        CLIENTS.remove(websocket)
+        clients.remove(websocket)
 
 async def main():
     async with websockets.serve(handler, "localhost", 8765):
