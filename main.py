@@ -17,6 +17,7 @@ turtle.color('blue')
 turtle.shape('circle')
 turtle.penup()
 turtle.tracer(0)
+turtle.pensize(1)
 turtle.shapesize(turtle.pensize()*0.05)
 
 def round_min(value):
