@@ -1,3 +1,4 @@
+from asyncio.tasks import Task
 import json
 from os import read
 import uuid
@@ -6,6 +7,7 @@ import asyncio
 import websockets
 from threading import Thread
 from queue import Empty, Queue
+from concurrent.futures import ProcessPoolExecutor
 from tkinter import colorchooser
 
 mouse_down = False
@@ -103,27 +105,26 @@ socket_queue = Queue()
 socket_id = str(uuid.uuid4())
 socket_draw_queue = Queue()
 
-def socket_thread(queue):
-    async def socket():
-        async def send():
-            obj = queue.get()
-            await websocket.send(json.dumps(obj))
-        async def receive():
-            a = await websocket.recv()
-            data = json.loads(a)
-            if data['socket_id'] == socket_id:
-                return
-            socket_draw_queue.put(data)
-            print(f"received {data}")
-        async with websockets.connect("ws://localhost:8765") as websocket:
-            while True:
-                await asyncio.sleep(0.001)
-                asyncio.create_task(send())
-                asyncio.create_task(receive())
-                
-    asyncio.run(socket())
+async def send(websocket):
+    while True:
+        obj = socket_draw_queue.get()
+        await websocket.send(json.dumps(obj))
+async def receive(websocket):
+    while True:
+        a = await websocket.recv()
+        data = json.loads(a)
+        if data['socket_id'] == socket_id:
+            return
+        socket_draw_queue.put(data)
+        print(f"received {data}")
 
-thread = Thread(target=socket_thread, args=(socket_queue,))
-thread.start()
+async def socket():
+    async with websockets.connect("ws://localhost:8765") as websocket:
+        send_thread = Thread(target=asyncio.run, daemon=True, args=(send(websocket),))
+        receive_thread = Thread(target=asyncio.run, daemon=True, args=(receive(websocket),))
+        send_thread.start()
+        receive_thread.start()
+
+asyncio.run(socket())
 
 turtle.mainloop()
