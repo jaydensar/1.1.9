@@ -1,21 +1,14 @@
+import json
+import uuid
 import turtle
 import asyncio
 import websockets
-
-socket = None
-
-async def connect():
-    global socket
-    async with websockets.connect("ws://localhost:8765") as websocket:
-        await websocket.send("Hello world!")
-        socket = websocket
-        await websocket.recv()
-
-asyncio.run(connect())
+from threading import Thread
+from queue import Queue
 
 mouse_down = False
 count = 0
-stroke_history = []
+stroke_history = [0]
 root = turtle.getcanvas().winfo_toplevel()
 
 # initial state
@@ -61,10 +54,16 @@ def motion_action(mouse):
     print(stroke_history)
     x=mouse.x-turtle.window_width()/2
     y=mouse.y-turtle.window_height()/2
+    socket_queue.put({
+        'x': x,
+        'y': -y,
+        'pen_down': mouse_down,
+        'pen_size': turtle.pensize(),
+        'shape_size': turtle.shapesize(),
+        'color': turtle.color(),
+        'socket_id': socket_id
+    })
     goto(x, -y)
-    if socket is not None:
-        socket.send(f"{x},{-y}")
-        print("sent to socket")
 
 def scroll_action(mouse):
     if mouse.delta<0:
@@ -86,5 +85,27 @@ root.bind('<ButtonRelease-1>', mouse_up_action)
 root.bind('<Motion>', motion_action)
 root.bind('<MouseWheel>', scroll_action)
 root.bind('<Control-z>', undo_action)
+
+# socket 
+socket_queue = Queue()
+socket_id = str(uuid.uuid4())
+socket_draw_queue = Queue()
+
+def socket_thread(queue):
+    async def socket():
+        async with websockets.connect("ws://localhost:8765") as websocket:
+            while True:
+                obj = queue.get()
+                await websocket.send(json.dumps(obj))
+                a = await websocket.recv()
+                data = json.loads(a)
+                if data['socket_id'] == socket_id:
+                    continue
+                socket_draw_queue.put(data)
+                print(f"received {data}")
+    asyncio.run(socket())
+
+thread = Thread(target=socket_thread, args=(socket_queue,))
+thread.start()
 
 turtle.mainloop()
