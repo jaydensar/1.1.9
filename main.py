@@ -6,6 +6,7 @@ import asyncio
 import websockets
 from threading import Thread
 from queue import Empty, Queue
+from tkinter import colorchooser
 
 mouse_down = False
 count = 0
@@ -22,11 +23,11 @@ turtle.pensize(1)
 turtle.shapesize(turtle.pensize()*0.05)
 turtle.update()
 
-def round_min(value):
+def round_min(value, min):
     if value>=0.5:
         return value
     else:
-        return 0.5
+        return min
 
 def goto(x,y):
     global count
@@ -72,7 +73,7 @@ def motion_action(mouse):
 
 def scroll_action(mouse):
     if mouse.delta<0:
-        turtle.pensize(round_min(turtle.pensize()-0.5))
+        turtle.pensize(round_min(turtle.pensize()-0.5, 0.5))
     else:
         turtle.pensize(turtle.pensize()+0.5)
     turtle.shapesize(turtle.pensize()*0.05)
@@ -85,11 +86,17 @@ def undo_action(_mouse):
     stroke_history.pop(0)
     turtle.update()
 
+def color_choose(_key):
+    color=colorchooser.askcolor()[1]
+    turtle.pencolor(color)
+    turtle.color(color)
+
 root.bind('<ButtonPress-1>', mouse_down_action)
 root.bind('<ButtonRelease-1>', mouse_up_action)
 root.bind('<Motion>', motion_action)
 root.bind('<MouseWheel>', scroll_action)
 root.bind('<Control-z>', undo_action)
+root.bind('<c>', color_choose)
 
 # socket 
 socket_queue = Queue()
