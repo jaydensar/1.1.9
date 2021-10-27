@@ -22,11 +22,11 @@ turtle.pensize(1)
 turtle.shapesize(turtle.pensize()*0.05)
 turtle.update()
 
-def round_min(value):
+def round_min(value, min):
     if value>=0.5:
         return value
     else:
-        return 0.5
+        return min
 
 def goto(x,y):
     global count
@@ -72,7 +72,7 @@ def motion_action(mouse):
 
 def scroll_action(mouse):
     if mouse.delta<0:
-        turtle.pensize(round_min(turtle.pensize()-0.5))
+        turtle.pensize(round_min(turtle.pensize()-0.5, 0.5))
     else:
         turtle.pensize(turtle.pensize()+0.5)
     turtle.shapesize(turtle.pensize()*0.05)
