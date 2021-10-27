@@ -68,10 +68,9 @@ def motion_action(mouse):
 def scroll_action(mouse):
     if mouse.delta<0:
         turtle.pensize(round_min(turtle.pensize()-0.5))
-        turtle.shapesize(round_min(turtle.pensize()-0.5))
     else:
         turtle.pensize(turtle.pensize()+0.5)
-        turtle.shapesize(turtle.pensize()+0.5)
+    turtle.shapesize(turtle.pensize()*0.05)
     print(turtle.pensize(),turtle.shapesize())
 
 def undo_action(_mouse):
