@@ -19,6 +19,7 @@ turtle.penup()
 turtle.tracer(0)
 turtle.pensize(1)
 turtle.shapesize(turtle.pensize()*0.05)
+turtle.update()
 
 def round_min(value):
     if value>=0.5:
