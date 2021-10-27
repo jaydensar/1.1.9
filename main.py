@@ -5,6 +5,7 @@ import asyncio
 import websockets
 from threading import Thread
 from queue import Queue
+from tkinter import colorchooser
 
 mouse_down = False
 count = 0
@@ -84,11 +85,17 @@ def undo_action(_mouse):
     stroke_history.pop(0)
     turtle.update()
 
+def color_choose(_key):
+    color=colorchooser.askcolor()[1]
+    turtle.pencolor(color)
+    turtle.color(color)
+
 root.bind('<ButtonPress-1>', mouse_down_action)
 root.bind('<ButtonRelease-1>', mouse_up_action)
 root.bind('<Motion>', motion_action)
 root.bind('<MouseWheel>', scroll_action)
 root.bind('<Control-z>', undo_action)
+root.bind('<c>', color_choose)
 
 # socket 
 socket_queue = Queue()
