@@ -20,7 +20,7 @@ turtle.color('blue')
 turtle.shape('circle')
 turtle.penup()
 turtle.tracer(0)
-turtle.pensize(1)
+turtle.pensize(2)
 turtle.shapesize(turtle.pensize()*0.05)
 turtle.update()
 
@@ -45,6 +45,8 @@ def mouse_down_action(mouse):
     y=mouse.y-turtle.window_height()/2
     stroke_history.insert(0, 0)
     turtle.penup()
+    turtle.stamp()
+    stroke_history[0] = stroke_history[0] + 1
     goto(x, -y)
     turtle.pendown()
 
@@ -58,7 +60,7 @@ def motion_action(mouse):
     else:
         turtle.penup()
     stroke_history[0] = stroke_history[0] + 1
-    print(stroke_history)
+    print('stroke:'+str(stroke_history))
     x=mouse.x-turtle.window_width()/2
     y=mouse.y-turtle.window_height()/2
     socket_queue.put({
@@ -82,9 +84,12 @@ def scroll_action(mouse):
     print(turtle.pensize(),turtle.shapesize())
 
 def undo_action(_mouse):
+    global stroke_history
     for _ in range(stroke_history[0]):
         turtle.undo()
     stroke_history.pop(0)
+    if len(stroke_history) == 0:
+        stroke_history=[0]
     turtle.update()
 
 def color_choose(_key):
