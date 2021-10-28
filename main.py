@@ -11,7 +11,7 @@ from tkinter import colorchooser
 PRECISION = 5  # lower is smoother, but slower
 OFFLINE = False  # skip connecting to websocket server
 LOAD_PREVIOUS = True  # whether or not to load people's previous drawings
-SOCKET_INSTANCE = "ws://119.jaydensar.net:6881" # set to socket instance (server.py)
+SOCKET_INSTANCE = "ws://119.jaydensar.net:8765" # set to socket instance (server.py)
 
 
 # internal variables
