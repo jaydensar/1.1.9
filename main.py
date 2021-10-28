@@ -7,9 +7,15 @@ from threading import Thread
 from queue import Queue, Empty
 from tkinter import colorchooser
 
-mouse_down = False
+# configurable options
+OFFLINE = False  # skip connecting to websocket server
+PRECISION = 5  # lower is smoother, but slower
+
+
+# internal variables
 count = 0
 stroke_history = [0]
+precision = int(PRECISION)
 root = turtle.getcanvas().winfo_toplevel()
 
 remote_turtles: dict[str, turtle.Turtle] = {}
@@ -34,50 +40,48 @@ def round_min(value, min):
 
 def goto(x, y):
     global count
-    print("moving to", x, y)
-    turtle.goto(x, y)
-    turtle.update()
-    count += 1
-    print(count)
+    global precision
+    if precision == PRECISION:
+        precision = 0
+        print("moving to", x, y)
+        turtle.goto(x, y)
+        turtle.update()
+        socket_queue.put({
+            'type': 'update',
+            'x': x,
+            'y': y,
+            'pen_down': turtle.pen()['pendown'],
+            'pen_size': turtle.pensize(),
+            'shape_size': turtle.shapesize(),
+            'color': turtle.color(),
+            'socket_id': socket_id
+        })
+        count += 1
+        print(count)
+    else:
+        precision += 1
+        print("skipping")
 
 
 def mouse_down_action(mouse):
-    global mouse_down
-    mouse_down = True
     x = mouse.x-turtle.window_width()/2
-    y = mouse.y-turtle.window_height()/2
+    y = -(mouse.y-turtle.window_height()/2)
     stroke_history.insert(0, 0)
-    turtle.penup()
-    turtle.stamp()
     stroke_history[0] = stroke_history[0] + 1
-    goto(x, -y)
+    goto(x, y)
     turtle.pendown()
 
 
 def mouse_up_action(_mouse):
-    global mouse_down
-    mouse_down = False
+    turtle.penup()
 
 
 def motion_action(mouse):
-    if mouse_down:
-        turtle.pendown()
-    else:
-        turtle.penup()
     stroke_history[0] = stroke_history[0] + 1
     print('stroke:'+str(stroke_history))
     x = mouse.x-turtle.window_width()/2
-    y = mouse.y-turtle.window_height()/2
-    socket_queue.put({
-        'x': x,
-        'y': -y,
-        'pen_down': mouse_down,
-        'pen_size': turtle.pensize(),
-        'shape_size': turtle.shapesize(),
-        'color': turtle.color(),
-        'socket_id': socket_id
-    })
-    goto(x, -y)
+    y = -(mouse.y-turtle.window_height()/2)
+    goto(x, y)
 
 
 def scroll_action(mouse):
@@ -125,36 +129,56 @@ def draw():
         data = socket_draw_queue.get(block=False)
     except Empty:
         pass
-    print(data)
+    # print(data)
     if (data is None):
-        root.after(1, draw)
+        root.after(100, draw)
         return
-    if not data['socket_id'] in remote_turtles:
-        remote_turtles[data['socket_id']] = turtle.Turtle()
+    
+    if data['type'] == 'update':
+        if not data['socket_id'] in remote_turtles:
+            remote_turtles[data['socket_id']] = turtle.Turtle()
+            remote_turtle = remote_turtles[data['socket_id']]
+            remote_turtle.penup()
+            remote_turtle.color(data['color'][0])
+            remote_turtle.shape('circle')
+            remote_turtle.pensize(data['pen_size'])
+            remote_turtle.shapesize(data['shape_size'][0])
+
         remote_turtle = remote_turtles[data['socket_id']]
-        remote_turtle.penup()
-        remote_turtle.color(data['color'][0])
-        remote_turtle.shape('circle')
+        remote_turtle.goto(data['x'], data['y'])
+        remote_turtle.pendown() if data['pen_down'] else remote_turtle.penup()
         remote_turtle.pensize(data['pen_size'])
         remote_turtle.shapesize(data['shape_size'][0])
-
-    remote_turtle = remote_turtles[data['socket_id']]
-    remote_turtle.goto(data['x'], data['y'])
-    remote_turtle.pendown() if data['pen_down'] else remote_turtle.penup()
-    remote_turtle.pensize(data['pen_size'])
-    remote_turtle.shapesize(data['shape_size'][0])
-    remote_turtle.color(data['color'][0])
+        remote_turtle.color(data['color'][0])
+        turtle.update()
+        root.after(0, draw)
+    
+    if data['type'] == 'init':
+        for turtle_data_json in data['data']:
+            turtle_data = json.loads(turtle_data_json)
+            print("doing action", turtle_data)
+            if not turtle_data['socket_id'] in remote_turtles:
+                remote_turtles[turtle_data['socket_id']] = turtle.Turtle()
+                remote_turtle = remote_turtles[turtle_data['socket_id']]
+                remote_turtle.penup()
+                remote_turtle.color(turtle_data['color'][0])
+                remote_turtle.shape('circle')
+                remote_turtle.pensize(turtle_data['pen_size'])
+                remote_turtle.shapesize(turtle_data['shape_size'][0])
+            remote_turtle = remote_turtles[turtle_data['socket_id']]
+            remote_turtle.goto(turtle_data['x'], turtle_data['y'])
+            remote_turtle.pendown() if turtle_data['pen_down'] else remote_turtle.penup()
+            remote_turtle.pensize(turtle_data['pen_size'])
+            remote_turtle.shapesize(turtle_data['shape_size'][0])
+            remote_turtle.color(turtle_data['color'][0])
     turtle.update()
-    root.after(0, draw)
 
-
-root.after(1, draw)
 
 
 def socket():
     def on_message(ws, message):
         data = json.loads(message)
-        if data['socket_id'] == socket_id:
+        if data['type'] == 'update' and data['socket_id'] == socket_id:
             return
         socket_draw_queue.put(data)
         print(message)
@@ -181,7 +205,8 @@ def socket():
     ws.run_forever()
 
 
-socket_thread = Thread(target=socket, daemon=True)
-socket_thread.start()
+if not OFFLINE:
+    root.after(1, draw)
+    Thread(target=socket, daemon=True).start()
 
 turtle.mainloop()

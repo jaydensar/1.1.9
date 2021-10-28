@@ -1,13 +1,17 @@
 import websockets
 import asyncio
+import json
 
 clients = set()
 
+msgs = []
+
 async def handler(websocket, path):
     clients.add(websocket)
+    await websocket.send(json.dumps({'type': 'init', 'data': msgs}))
     try:
         async for msg in websocket:
-            print(msg)
+            msgs.append(msg)
             await asyncio.gather(
                 *[ws.send(msg) for ws in clients],
                 return_exceptions=False,
