@@ -1,19 +1,18 @@
 import json
 import uuid
 import turtle
-import asyncio
 import websocket
-import websockets
 
-from queue import Empty, Queue
 from threading import Thread
-from asyncio.tasks import Task
+from queue import Queue, Empty
 from tkinter import colorchooser
 
 mouse_down = False
 count = 0
 stroke_history = [0]
 root = turtle.getcanvas().winfo_toplevel()
+
+remote_turtles: dict[str, turtle.Turtle] = {}
 
 # initial state
 root.config(cursor="none")
@@ -109,6 +108,36 @@ socket_queue = Queue()
 socket_id = str(uuid.uuid4())
 socket_draw_queue = Queue()
 
+def draw():
+    print("running")
+    data = None
+    try:
+        data = socket_draw_queue.get(block=False)
+    except Empty:
+        pass
+    print(data)
+    if (data is None):
+        root.after(1, draw)
+        return
+    if not data['socket_id'] in remote_turtles:
+        remote_turtles[data['socket_id']] = turtle.Turtle()
+        remote_turtle = remote_turtles[data['socket_id']]
+        remote_turtle.penup()
+        remote_turtle.color(data['color'][0])
+        remote_turtle.shape('circle')
+        remote_turtle.pensize(data['pen_size'])
+        remote_turtle.shapesize(data['shape_size'][0])
+    
+    remote_turtle = remote_turtles[data['socket_id']]
+    remote_turtle.goto(data['x'], data['y'])
+    remote_turtle.pendown() if data['pen_down'] else remote_turtle.penup()
+    remote_turtle.pensize(data['pen_size'])
+    remote_turtle.shapesize(data['shape_size'][0])
+    remote_turtle.color(data['color'][0])
+    turtle.update()
+    root.after(0, draw)
+
+root.after(1, draw)
 
 def socket():
     def on_message(ws, message):
