@@ -8,8 +8,9 @@ from queue import Queue, Empty
 from tkinter import colorchooser
 
 # configurable options
-OFFLINE = False  # skip connecting to websocket server
 PRECISION = 5  # lower is smoother, but slower
+OFFLINE = False  # skip connecting to websocket server
+LOAD_PREVIOUS = True  # whether or not to load people's previous drawings
 
 
 # internal variables
@@ -52,7 +53,6 @@ def goto(x, y):
             'y': y,
             'pen_down': turtle.pen()['pendown'],
             'pen_size': turtle.pensize(),
-            'shape_size': turtle.shapesize(),
             'color': turtle.color(),
             'socket_id': socket_id
         })
@@ -96,11 +96,19 @@ def scroll_action(mouse):
 
 def undo_action(_mouse):
     global stroke_history
+    undo_count = 0
     for _ in range(stroke_history[0]):
         turtle.undo()
+        undo_count += 1
     stroke_history.pop(0)
     if len(stroke_history) == 0:
         stroke_history = [0]
+
+    socket_queue.put({
+        'type': 'undo',
+        'socket_id': socket_id,
+        'count': undo_count
+    })
     turtle.update()
 
 
@@ -123,6 +131,7 @@ socket_draw_queue = Queue()
 
 
 def draw():
+    global remote_turtles
     print("running")
     data = None
     try:
@@ -133,8 +142,11 @@ def draw():
     if (data is None):
         root.after(100, draw)
         return
-    
+
+    print(data['type'])
+
     if data['type'] == 'update':
+        print("type is update")
         if not data['socket_id'] in remote_turtles:
             remote_turtles[data['socket_id']] = turtle.Turtle()
             remote_turtle = remote_turtles[data['socket_id']]
@@ -142,37 +154,59 @@ def draw():
             remote_turtle.color(data['color'][0])
             remote_turtle.shape('circle')
             remote_turtle.pensize(data['pen_size'])
-            remote_turtle.shapesize(data['shape_size'][0])
+            remote_turtle.shapesize(data['pen_size']*0.05)
 
         remote_turtle = remote_turtles[data['socket_id']]
         remote_turtle.goto(data['x'], data['y'])
         remote_turtle.pendown() if data['pen_down'] else remote_turtle.penup()
         remote_turtle.pensize(data['pen_size'])
-        remote_turtle.shapesize(data['shape_size'][0])
+        remote_turtle.shapesize(data['pen_size']*0.05)
         remote_turtle.color(data['color'][0])
         turtle.update()
         root.after(0, draw)
-    
-    if data['type'] == 'init':
-        for turtle_data_json in data['data']:
-            turtle_data = json.loads(turtle_data_json)
-            print("doing action", turtle_data)
-            if not turtle_data['socket_id'] in remote_turtles:
-                remote_turtles[turtle_data['socket_id']] = turtle.Turtle()
-                remote_turtle = remote_turtles[turtle_data['socket_id']]
-                remote_turtle.penup()
-                remote_turtle.color(turtle_data['color'][0])
-                remote_turtle.shape('circle')
-                remote_turtle.pensize(turtle_data['pen_size'])
-                remote_turtle.shapesize(turtle_data['shape_size'][0])
-            remote_turtle = remote_turtles[turtle_data['socket_id']]
-            remote_turtle.goto(turtle_data['x'], turtle_data['y'])
-            remote_turtle.pendown() if turtle_data['pen_down'] else remote_turtle.penup()
-            remote_turtle.pensize(turtle_data['pen_size'])
-            remote_turtle.shapesize(turtle_data['shape_size'][0])
-            remote_turtle.color(turtle_data['color'][0])
-    turtle.update()
+        return
 
+    if data['type'] == 'init':
+        if LOAD_PREVIOUS:
+            for turtle_data_json in data['data']:
+                turtle_data = json.loads(turtle_data_json)
+                print("doing action", turtle_data)
+                if turtle_data['type'] == 'undo':
+                    try:
+                        remote_turtle = remote_turtles[data['socket_id']]
+
+                        for _ in range(data['count']):
+                            remote_turtle.undo()
+                    except:
+                        pass
+                    continue
+                if not turtle_data['socket_id'] in remote_turtles:
+                    remote_turtles[turtle_data['socket_id']] = turtle.Turtle()
+                    remote_turtle = remote_turtles[turtle_data['socket_id']]
+                    remote_turtle.penup()
+                    remote_turtle.color(turtle_data['color'][0])
+                    remote_turtle.shape('circle')
+                    remote_turtle.pensize(turtle_data['pen_size'])
+                    remote_turtle.shapesize(turtle_data['pen_size']*0.05)
+                remote_turtle = remote_turtles[turtle_data['socket_id']]
+                remote_turtle.goto(turtle_data['x'], turtle_data['y'])
+                remote_turtle.pendown(
+                ) if turtle_data['pen_down'] else remote_turtle.penup()
+                remote_turtle.pensize(turtle_data['pen_size'])
+                remote_turtle.shapesize(turtle_data['pen_size']*0.05)
+                remote_turtle.color(turtle_data['color'][0])
+            turtle.update()
+            remote_turtles = {}
+            root.after(100, draw)
+
+    if data['type'] == 'undo':
+        remote_turtle = remote_turtles[data['socket_id']]
+
+        for _ in range(data['count']):
+            remote_turtle.undo()
+
+        turtle.update()
+        root.after(0, draw)
 
 
 def socket():
