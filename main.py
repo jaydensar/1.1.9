@@ -2,7 +2,7 @@ import json
 import uuid
 import turtle
 import asyncio
-import websocket
+import websockets
 
 from queue import Queue
 from threading import Thread
@@ -74,9 +74,9 @@ def motion_action(mouse):
 
 def scroll_action(mouse):
     if mouse.delta<0:
-        turtle.pensize(round_min(turtle.pensize()-0.5, 0.5))
+        turtle.pensize(round_min(turtle.pensize()-2, 2))
     else:
-        turtle.pensize(turtle.pensize()+0.5)
+        turtle.pensize(turtle.pensize()+2)
     turtle.shapesize(turtle.pensize()*0.05)
     turtle.update()
     print(turtle.pensize(),turtle.shapesize())
