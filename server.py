@@ -6,6 +6,7 @@ clients = set()
 
 msgs = []
 
+
 async def handler(websocket, path):
     clients.add(websocket)
     await websocket.send(json.dumps({'type': 'init', 'data': msgs}))
@@ -18,6 +19,7 @@ async def handler(websocket, path):
             )
     finally:
         clients.remove(websocket)
+
 
 async def main():
     async with websockets.serve(handler, "localhost", 8765):
