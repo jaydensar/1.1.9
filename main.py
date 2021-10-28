@@ -11,6 +11,7 @@ from tkinter import colorchooser
 PRECISION = 5  # lower is smoother, but slower
 OFFLINE = False  # skip connecting to websocket server
 LOAD_PREVIOUS = True  # whether or not to load people's previous drawings
+SOCKET_INSTANCE = "ws://119.jaydensar.net:6881" # set to socket instance (server.py)
 
 
 # internal variables
@@ -230,7 +231,7 @@ def socket():
                 ws.send(json.dumps(s))
         Thread(target=run, args=()).start()
 
-    ws = websocket.WebSocketApp("ws://localhost:8765",
+    ws = websocket.WebSocketApp(SOCKET_INSTANCE,
                                 on_open=on_open,
                                 on_message=on_message,
                                 on_error=on_error,
