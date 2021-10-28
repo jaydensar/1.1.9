@@ -3,8 +3,9 @@ import uuid
 import turtle
 import asyncio
 import websocket
+import websockets
 
-from queue import Queue
+from queue import Empty, Queue
 from threading import Thread
 from asyncio.tasks import Task
 from tkinter import colorchooser
@@ -99,31 +100,41 @@ root.bind('<MouseWheel>', scroll_action)
 root.bind('<Control-z>', undo_action)
 root.bind('<c>', color_choose)
 
-# socket 
 socket_queue = Queue()
 socket_id = str(uuid.uuid4())
 socket_draw_queue = Queue()
 
-async def send(websocket):
-    while True:
-        obj = socket_draw_queue.get()
-        await websocket.send(json.dumps(obj))
-async def receive(websocket):
-    while True:
-        a = await websocket.recv()
-        data = json.loads(a)
+
+def socket():
+    def on_message(ws, message):
+        data = json.loads(message)
         if data['socket_id'] == socket_id:
             return
         socket_draw_queue.put(data)
-        print(f"received {data}")
+        print(message)
 
-async def socket():
-    async with websockets.connect("ws://localhost:8765") as websocket:
-        send_thread = Thread(target=asyncio.run, daemon=True, args=(send(websocket),))
-        receive_thread = Thread(target=asyncio.run, daemon=True, args=(receive(websocket),))
-        send_thread.start()
-        receive_thread.start()
+    def on_error(ws, error):
+        print(error)
 
-asyncio.run(socket())
+    def on_close(ws, close_status_code, close_msg):
+        print(f"socket closed: {close_status_code} {close_msg}")
+
+    def on_open(ws):
+        def run(*args):
+            while True:
+                s = socket_queue.get()
+                ws.send(json.dumps(s))
+        Thread(target=run, args=()).start()
+
+    ws = websocket.WebSocketApp("ws://localhost:8765",
+                            on_open=on_open,
+                            on_message=on_message,
+                            on_error=on_error,
+                            on_close=on_close)
+
+    ws.run_forever()
+
+socket_thread = Thread(target=socket, daemon=True)
+socket_thread.start()
 
 turtle.mainloop()
