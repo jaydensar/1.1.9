@@ -1,13 +1,12 @@
-from asyncio.tasks import Task
 import json
-from os import read
 import uuid
 import turtle
 import asyncio
-import websockets
+import websocket
+
+from queue import Queue
 from threading import Thread
-from queue import Empty, Queue
-from concurrent.futures import ProcessPoolExecutor
+from asyncio.tasks import Task
 from tkinter import colorchooser
 
 mouse_down = False
