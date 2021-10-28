@@ -24,25 +24,28 @@ turtle.pensize(2)
 turtle.shapesize(turtle.pensize()*0.05)
 turtle.update()
 
+
 def round_min(value, min):
-    if value>=0.5:
+    if value >= min:
         return value
     else:
         return min
 
-def goto(x,y):
+
+def goto(x, y):
     global count
     print("moving to", x, y)
-    turtle.goto(x,y)
+    turtle.goto(x, y)
     turtle.update()
-    count+=1
+    count += 1
     print(count)
+
 
 def mouse_down_action(mouse):
     global mouse_down
-    mouse_down=True
-    x=mouse.x-turtle.window_width()/2
-    y=mouse.y-turtle.window_height()/2
+    mouse_down = True
+    x = mouse.x-turtle.window_width()/2
+    y = mouse.y-turtle.window_height()/2
     stroke_history.insert(0, 0)
     turtle.penup()
     turtle.stamp()
@@ -50,9 +53,11 @@ def mouse_down_action(mouse):
     goto(x, -y)
     turtle.pendown()
 
+
 def mouse_up_action(_mouse):
     global mouse_down
-    mouse_down=False
+    mouse_down = False
+
 
 def motion_action(mouse):
     if mouse_down:
@@ -61,8 +66,8 @@ def motion_action(mouse):
         turtle.penup()
     stroke_history[0] = stroke_history[0] + 1
     print('stroke:'+str(stroke_history))
-    x=mouse.x-turtle.window_width()/2
-    y=mouse.y-turtle.window_height()/2
+    x = mouse.x-turtle.window_width()/2
+    y = mouse.y-turtle.window_height()/2
     socket_queue.put({
         'x': x,
         'y': -y,
@@ -74,14 +79,16 @@ def motion_action(mouse):
     })
     goto(x, -y)
 
+
 def scroll_action(mouse):
-    if mouse.delta<0:
+    if mouse.delta < 0:
         turtle.pensize(round_min(turtle.pensize()-2, 2))
     else:
         turtle.pensize(turtle.pensize()+2)
     turtle.shapesize(turtle.pensize()*0.05)
     turtle.update()
-    print(turtle.pensize(),turtle.shapesize())
+    print(turtle.pensize(), turtle.shapesize())
+
 
 def undo_action(_mouse):
     global stroke_history
@@ -89,13 +96,15 @@ def undo_action(_mouse):
         turtle.undo()
     stroke_history.pop(0)
     if len(stroke_history) == 0:
-        stroke_history=[0]
+        stroke_history = [0]
     turtle.update()
 
+
 def color_choose(_key):
-    color=colorchooser.askcolor()[1]
+    color = colorchooser.askcolor()[1]
     turtle.pencolor(color)
     turtle.color(color)
+
 
 root.bind('<ButtonPress-1>', mouse_down_action)
 root.bind('<ButtonRelease-1>', mouse_up_action)
@@ -107,6 +116,7 @@ root.bind('<c>', color_choose)
 socket_queue = Queue()
 socket_id = str(uuid.uuid4())
 socket_draw_queue = Queue()
+
 
 def draw():
     print("running")
@@ -127,7 +137,7 @@ def draw():
         remote_turtle.shape('circle')
         remote_turtle.pensize(data['pen_size'])
         remote_turtle.shapesize(data['shape_size'][0])
-    
+
     remote_turtle = remote_turtles[data['socket_id']]
     remote_turtle.goto(data['x'], data['y'])
     remote_turtle.pendown() if data['pen_down'] else remote_turtle.penup()
@@ -137,7 +147,9 @@ def draw():
     turtle.update()
     root.after(0, draw)
 
+
 root.after(1, draw)
+
 
 def socket():
     def on_message(ws, message):
@@ -161,12 +173,13 @@ def socket():
         Thread(target=run, args=()).start()
 
     ws = websocket.WebSocketApp("ws://localhost:8765",
-                            on_open=on_open,
-                            on_message=on_message,
-                            on_error=on_error,
-                            on_close=on_close)
+                                on_open=on_open,
+                                on_message=on_message,
+                                on_error=on_error,
+                                on_close=on_close)
 
     ws.run_forever()
+
 
 socket_thread = Thread(target=socket, daemon=True)
 socket_thread.start()
