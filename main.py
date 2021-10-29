@@ -120,6 +120,14 @@ def color_choose(_key):
     turtle.pencolor(color)
     turtle.color(color)
 
+def clear(_mouse):
+    print(_mouse)
+    turtle.clear()
+    socket_queue.put({
+        'type': 'clear',
+    })
+    turtle.update()
+
 
 root.bind('<ButtonPress-1>', mouse_down_action)
 root.bind('<ButtonRelease-1>', mouse_up_action)
@@ -127,6 +135,7 @@ root.bind('<Motion>', motion_action)
 root.bind('<MouseWheel>', scroll_action)
 root.bind('<Control-z>', undo_action)
 root.bind('<c>', color_choose)
+root.bind('<Control-Delete>', clear)
 
 socket_queue = Queue()
 socket_id = str(uuid.uuid4())
@@ -211,6 +220,9 @@ def draw():
         turtle.update()
         root.after(0, draw)
 
+    if data['type'] == 'clear':
+        turtle.clear()
+        root.after(100, draw)
 
 def socket():
     def on_message(ws, message):
