@@ -223,7 +223,7 @@ def draw():
 
     if data['type'] == 'clear':
         remote_turtles[data['socket_id']].clear()
-        root.after(100, draw)
+        root.after(0, draw)
 
 def socket():
     def on_message(ws, message):
