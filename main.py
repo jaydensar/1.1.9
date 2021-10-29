@@ -8,7 +8,7 @@ from queue import Queue, Empty
 from tkinter import colorchooser
 
 # configurable options
-PRECISION = 5 # make value higher if there are performance issues
+PRECISION = 1 # make value higher if there are performance issues
 OFFLINE = False  # skip connecting to websocket server
 LOAD_PREVIOUS = True  # whether or not to load people's previous drawings
 
