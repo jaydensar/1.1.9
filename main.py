@@ -220,10 +220,6 @@ def draw():
         turtle.update()
         root.after(0, draw)
 
-    if data['type'] == 'clear':
-        turtle.clear()
-        root.after(100, draw)
-
 def socket():
     def on_message(ws, message):
         data = json.loads(message)
