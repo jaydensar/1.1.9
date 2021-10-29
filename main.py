@@ -120,12 +120,10 @@ def color_choose(_key):
     turtle.color(color)
 
 def clear(_key):
-    turtle.clear()
     socket_queue.put({
         'type': 'clear',
         'socket_id': socket_id,
     })
-    turtle.update()
 
 
 root.bind('<ButtonPress-1>', mouse_down_action) #detect mouse down call function mouse_down
@@ -218,9 +216,11 @@ def draw():
         root.after(0, draw)
 
     if data['type'] == 'clear':
+        turtle.clear()
         turtle_array = list(remote_turtles.values())
         for remote_turtle in turtle_array:
             remote_turtle.clear()
+        turtle.update()
         root.after(100, draw)
 
 def socket():
