@@ -220,8 +220,10 @@ def draw():
         root.after(0, draw)
 
     if data['type'] == 'clear':
-        remote_turtles[data['socket_id']].clear()
-        root.after(0, draw)
+        turtle_array = list(remote_turtles.values())
+        for remote_turtle in turtle_array:
+            remote_turtle.clear()
+        root.after(100, draw)
 
 def socket():
     def on_message(ws, message):

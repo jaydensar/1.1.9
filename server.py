@@ -8,11 +8,14 @@ msgs = []
 
 
 async def handler(websocket, path):
+    global msgs
     clients.add(websocket)
     await websocket.send(json.dumps({'type': 'init', 'data': msgs}))
     try:
         async for msg in websocket:
             msgs.append(msg)
+            if ("reset" in msg):
+                msgs = []
             await asyncio.gather(
                 *[ws.send(msg) for ws in clients],
                 return_exceptions=False,
