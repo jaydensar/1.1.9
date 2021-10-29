@@ -8,7 +8,7 @@ from queue import Queue, Empty
 from tkinter import colorchooser
 
 # configurable options
-PRECISION = 1  # make value higher if there are performance issues
+PRECISION = 1 # make value higher if there are performance issues
 OFFLINE = False  # skip connecting to websocket server
 LOAD_PREVIOUS = True  # whether or not to load people's previous drawings
 
@@ -25,13 +25,17 @@ root = turtle.getcanvas().winfo_toplevel()
 remote_turtles: dict[str, turtle.Turtle] = {}
 
 # initial state
+def init_turtle(turtle: turtle.Turtle, color="blue", shape="circle", pensize=2):
+    turtle.color(color)
+    turtle.shape(shape)
+    turtle.penup()
+    turtle.pensize(pensize)
+    turtle.shapesize(turtle.pensize()*0.05)
+
+
 root.config(cursor="none")
-turtle.color('blue')
-turtle.shape('circle')
-turtle.penup()
+init_turtle(turtle)
 turtle.tracer(0)
-turtle.pensize(2)
-turtle.shapesize(turtle.pensize()*0.05)
 turtle.update()
 
 
@@ -41,6 +45,8 @@ def round_min(value, min):
     else:
         return min
 
+# goto helper function to move turtle and send to socket queue,
+# with precision options and counting amount of calls
 def goto(x, y):
     global count
     global precision
@@ -65,37 +71,38 @@ def goto(x, y):
         print("skipping")
 
 
-def mouse_down_action(mouse): #function mouse_down(given argument mouse)
-    x = mouse.x-turtle.window_width()/2 #set x to mouse x coordinate minus window width divided by 2
-    y = -(mouse.y-turtle.window_height()/2) #set y to mouse y coordinate minus window height divided by 2
+# set turtle loc to mouse loc when clicked, then insert to stroke history and set pen down
+def mouse_down_action(mouse):
+    x = mouse.x-turtle.window_width()/2
+    y = -(mouse.y-turtle.window_height()/2)
     stroke_history.insert(0, 0)
     stroke_history[0] = stroke_history[0] + 1
-    goto(x, y) #set move turtle go to (x,-y)
+    goto(x, y)
     turtle.pendown()
 
-
-def mouse_up_action(_mouse): #function mouse_up(given argument mouse)
+# pen up on mouse up
+def mouse_up_action(_mouse):
     turtle.penup()
 
-
+# draw on turtle board
 def motion_action(mouse):
     stroke_history[0] = stroke_history[0] + 1
     print('stroke:'+str(stroke_history))
-    x = mouse.x-turtle.window_width()/2 #set x to mouse x coordinate minus window width divided by 2
-    y = -(mouse.y-turtle.window_height()/2) #set y to mouse y coordinate minus window height divided by 2
-    goto(x, y) #set move turtle go to (x,-y)
+    x = mouse.x-turtle.window_width()/2
+    y = -(mouse.y-turtle.window_height()/2)
+    goto(x, y)
 
-
-def scroll_action(mouse): #function scroll(given argument mouse)
-    if mouse.delta < 0: #if mouse scroll position is less than 0 then
-        turtle.pensize(round_min(turtle.pensize()-2, 2)) #decrement turtle pensize by 2
-    else: #else then
-        turtle.pensize(turtle.pensize()+2) #increment turtle pensize by 0.5
+# increase pensize on scroll
+def scroll_action(mouse):
+    if mouse.delta < 0:
+        turtle.pensize(round_min(turtle.pensize()-2, 2))
+    else:
+        turtle.pensize(turtle.pensize()+2)
     turtle.shapesize(turtle.pensize()*0.05)
     turtle.update()
     print(turtle.pensize(), turtle.shapesize())
 
-
+# undo last stroke on turtle
 def undo_action(_mouse):
     global stroke_history
     undo_count = 0
@@ -106,6 +113,7 @@ def undo_action(_mouse):
     if len(stroke_history) == 0:
         stroke_history = [0]
 
+    # put undo message in socket queue
     socket_queue.put({
         'type': 'undo',
         'socket_id': socket_id,
@@ -113,23 +121,26 @@ def undo_action(_mouse):
     })
     turtle.update()
 
-
+# show tkinter colorchooser and set turtle color
 def color_choose(_key):
     color = colorchooser.askcolor()[1]
     turtle.pencolor(color)
     turtle.color(color)
 
+# clear board
 def clear(_key):
+    # put clear screen message in socket queue
     socket_queue.put({
         'type': 'clear',
         'socket_id': socket_id,
     })
 
 
-root.bind('<ButtonPress-1>', mouse_down_action) #detect mouse down call function mouse_down
-root.bind('<ButtonRelease-1>', mouse_up_action) #detect mouse up call function mouse_up
-root.bind('<Motion>', motion_action) #detect mouse motion call function motion
-root.bind('<MouseWheel>', scroll_action) #detect mouse scroll call function scroll
+# bind keyboard and mouse events to functions
+root.bind('<ButtonPress-1>', mouse_down_action)
+root.bind('<ButtonRelease-1>', mouse_up_action)
+root.bind('<Motion>', motion_action)
+root.bind('<MouseWheel>', scroll_action)
 root.bind('<Control-z>', undo_action)
 root.bind('<c>', color_choose)
 root.bind('<Control-Delete>', clear)
@@ -137,6 +148,9 @@ root.bind('<Control-Delete>', clear)
 socket_queue = Queue()
 socket_id = str(uuid.uuid4())
 socket_draw_queue = Queue()
+
+replayer_turtle = turtle.Turtle()
+init_turtle(replayer_turtle)
 
 
 def draw():
@@ -158,11 +172,8 @@ def draw():
         if not data['socket_id'] in remote_turtles:
             remote_turtles[data['socket_id']] = turtle.Turtle()
             remote_turtle = remote_turtles[data['socket_id']]
-            remote_turtle.penup()
-            remote_turtle.color(data['color'][0])
-            remote_turtle.shape('circle')
-            remote_turtle.pensize(data['pen_size'])
-            remote_turtle.shapesize(data['pen_size']*0.05)
+            init_turtle(remote_turtle, data['color'],
+                        "circle", data['pen_size'])
 
         remote_turtle = remote_turtles[data['socket_id']]
         remote_turtle.goto(data['x'], data['y'])
@@ -181,28 +192,17 @@ def draw():
                 print("doing action", turtle_data)
                 if turtle_data['type'] == 'undo':
                     try:
-                        remote_turtle = remote_turtles[data['socket_id']]
-
                         for _ in range(data['count']):
-                            remote_turtle.undo()
+                            replayer_turtle.undo()
                     except:
                         pass
                     continue
-                if not turtle_data['socket_id'] in remote_turtles:
-                    remote_turtles[turtle_data['socket_id']] = turtle.Turtle()
-                    remote_turtle = remote_turtles[turtle_data['socket_id']]
-                    remote_turtle.penup()
-                    remote_turtle.color(turtle_data['color'][0])
-                    remote_turtle.shape('circle')
-                    remote_turtle.pensize(turtle_data['pen_size'])
-                    remote_turtle.shapesize(turtle_data['pen_size']*0.05)
-                remote_turtle = remote_turtles[turtle_data['socket_id']]
-                remote_turtle.goto(turtle_data['x'], turtle_data['y'])
-                remote_turtle.pendown(
-                ) if turtle_data['pen_down'] else remote_turtle.penup()
-                remote_turtle.pensize(turtle_data['pen_size'])
-                remote_turtle.shapesize(turtle_data['pen_size']*0.05)
-                remote_turtle.color(turtle_data['color'][0])
+                replayer_turtle.goto(turtle_data['x'], turtle_data['y'])
+                replayer_turtle.pendown(
+                ) if turtle_data['pen_down'] else replayer_turtle.penup()
+                replayer_turtle.pensize(turtle_data['pen_size'])
+                replayer_turtle.shapesize(turtle_data['pen_size']*0.05)
+                replayer_turtle.color(turtle_data['color'][0])
             turtle.update()
             root.after(100, draw)
 
@@ -222,6 +222,7 @@ def draw():
             remote_turtle.clear()
         turtle.update()
         root.after(100, draw)
+
 
 def socket():
     def on_message(ws, message):
@@ -257,4 +258,4 @@ if not OFFLINE:
     root.after(1, draw)
     Thread(target=socket, daemon=True).start()
 
-turtle.mainloop() #turtle loop
+turtle.mainloop()  # turtle loop
