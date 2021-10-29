@@ -8,7 +8,7 @@ from queue import Queue, Empty
 from tkinter import colorchooser
 
 # configurable options
-PRECISION = 1 # make value higher if there are performance issues
+PRECISION = 5 # make value higher if there are performance issues
 OFFLINE = False  # skip connecting to websocket server
 LOAD_PREVIOUS = True  # whether or not to load people's previous drawings
 
@@ -102,13 +102,19 @@ def scroll_action(mouse):
     turtle.update()
     print(turtle.pensize(), turtle.shapesize())
 
+def arrow_action(key):
+    if key.keysym == "Up":
+        turtle.pensize(turtle.pensize()+2)
+    else:
+        turtle.pensize(round_min(turtle.pensize()-2, 2))
+    turtle.shapesize(turtle.pensize()*0.05)
+    turtle.update()
+
 # undo last stroke on turtle
 def undo_action(_mouse):
     global stroke_history
-    undo_count = 0
     for _ in range(stroke_history[0]):
         turtle.undo()
-        undo_count += 1
     stroke_history.pop(0)
     if len(stroke_history) == 0:
         stroke_history = [0]
@@ -117,7 +123,7 @@ def undo_action(_mouse):
     socket_queue.put({
         'type': 'undo',
         'socket_id': socket_id,
-        'count': undo_count
+        'count': stroke_history[0]
     })
     turtle.update()
 
@@ -144,6 +150,8 @@ root.bind('<MouseWheel>', scroll_action)
 root.bind('<Control-z>', undo_action)
 root.bind('<c>', color_choose)
 root.bind('<Control-Delete>', clear)
+root.bind('<Up>', arrow_action)
+root.bind('<Down>', arrow_action)
 
 socket_queue = Queue()
 socket_id = str(uuid.uuid4())
@@ -172,12 +180,15 @@ def draw():
         if not data['socket_id'] in remote_turtles:
             remote_turtles[data['socket_id']] = turtle.Turtle()
             remote_turtle = remote_turtles[data['socket_id']]
-            init_turtle(remote_turtle, data['color'],
-                        "circle", data['pen_size'])
+            remote_turtle.penup()
+            remote_turtle.color(data['color'][0])
+            remote_turtle.shape('circle')
+            remote_turtle.pensize(data['pen_size'])
+            remote_turtle.shapesize(data['pen_size']*0.05)
 
         remote_turtle = remote_turtles[data['socket_id']]
-        remote_turtle.goto(data['x'], data['y'])
         remote_turtle.pendown() if data['pen_down'] else remote_turtle.penup()
+        remote_turtle.goto(data['x'], data['y'])
         remote_turtle.pensize(data['pen_size'])
         remote_turtle.shapesize(data['pen_size']*0.05)
         remote_turtle.color(data['color'][0])
@@ -197,9 +208,9 @@ def draw():
                     except:
                         pass
                     continue
-                replayer_turtle.goto(turtle_data['x'], turtle_data['y'])
                 replayer_turtle.pendown(
                 ) if turtle_data['pen_down'] else replayer_turtle.penup()
+                replayer_turtle.goto(turtle_data['x'], turtle_data['y'])
                 replayer_turtle.pensize(turtle_data['pen_size'])
                 replayer_turtle.shapesize(turtle_data['pen_size']*0.05)
                 replayer_turtle.color(turtle_data['color'][0])
@@ -239,11 +250,11 @@ def socket():
         print(f"socket closed: {close_status_code} {close_msg}")
 
     def on_open(ws):
-        def run(*args):
+        def run():
             while True:
                 s = socket_queue.get()
                 ws.send(json.dumps(s))
-        Thread(target=run, args=()).start()
+        Thread(target=run, args=(), daemon=True).start()
 
     ws = websocket.WebSocketApp(SOCKET_INSTANCE,
                                 on_open=on_open,
