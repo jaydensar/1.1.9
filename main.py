@@ -119,8 +119,7 @@ def color_choose(_key):
     turtle.pencolor(color)
     turtle.color(color)
 
-def clear(_mouse):
-    print(_mouse)
+def clear(_key):
     turtle.clear()
     socket_queue.put({
         'type': 'clear',
