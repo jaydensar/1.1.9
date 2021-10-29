@@ -144,7 +144,6 @@ socket_draw_queue = Queue()
 
 
 def draw():
-    global remote_turtles
     print("running")
     data = None
     try:
@@ -209,7 +208,6 @@ def draw():
                 remote_turtle.shapesize(turtle_data['pen_size']*0.05)
                 remote_turtle.color(turtle_data['color'][0])
             turtle.update()
-            remote_turtles = {}
             root.after(100, draw)
 
     if data['type'] == 'undo':
@@ -223,7 +221,7 @@ def draw():
 
     if data['type'] == 'clear':
         remote_turtles[data['socket_id']].clear()
-        root.after(100, draw)
+        root.after(0, draw)
 
 def socket():
     def on_message(ws, message):
