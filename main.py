@@ -125,6 +125,7 @@ def clear(_mouse):
     turtle.clear()
     socket_queue.put({
         'type': 'clear',
+        'socket_id': socket_id,
     })
     turtle.update()
 
@@ -221,7 +222,7 @@ def draw():
         root.after(0, draw)
 
     if data['type'] == 'clear':
-        turtle.clear()
+        remote_turtles[data['socket_id']].clear()
         root.after(100, draw)
 
 def socket():
