@@ -41,7 +41,6 @@ def round_min(value, min):
     else:
         return min
 
-
 def goto(x, y):
     global count
     global precision
@@ -66,32 +65,32 @@ def goto(x, y):
         print("skipping")
 
 
-def mouse_down_action(mouse):
-    x = mouse.x-turtle.window_width()/2
-    y = -(mouse.y-turtle.window_height()/2)
+def mouse_down_action(mouse): #function mouse_down(given argument mouse)
+    x = mouse.x-turtle.window_width()/2 #set x to mouse x coordinate minus window width divided by 2
+    y = -(mouse.y-turtle.window_height()/2) #set y to mouse y coordinate minus window height divided by 2
     stroke_history.insert(0, 0)
     stroke_history[0] = stroke_history[0] + 1
-    goto(x, y)
+    goto(x, y) #set move turtle go to (x,-y)
     turtle.pendown()
 
 
-def mouse_up_action(_mouse):
+def mouse_up_action(_mouse): #function mouse_up(given argument mouse)
     turtle.penup()
 
 
 def motion_action(mouse):
     stroke_history[0] = stroke_history[0] + 1
     print('stroke:'+str(stroke_history))
-    x = mouse.x-turtle.window_width()/2
-    y = -(mouse.y-turtle.window_height()/2)
-    goto(x, y)
+    x = mouse.x-turtle.window_width()/2 #set x to mouse x coordinate minus window width divided by 2
+    y = -(mouse.y-turtle.window_height()/2) #set y to mouse y coordinate minus window height divided by 2
+    goto(x, y) #set move turtle go to (x,-y)
 
 
-def scroll_action(mouse):
-    if mouse.delta < 0:
-        turtle.pensize(round_min(turtle.pensize()-2, 2))
-    else:
-        turtle.pensize(turtle.pensize()+2)
+def scroll_action(mouse): #function scroll(given argument mouse)
+    if mouse.delta < 0: #if mouse scroll position is less than 0 then
+        turtle.pensize(round_min(turtle.pensize()-2, 2)) #decrement turtle pensize by 2
+    else: #else then
+        turtle.pensize(turtle.pensize()+2) #increment turtle pensize by 0.5
     turtle.shapesize(turtle.pensize()*0.05)
     turtle.update()
     print(turtle.pensize(), turtle.shapesize())
@@ -130,10 +129,10 @@ def clear(_mouse):
     turtle.update()
 
 
-root.bind('<ButtonPress-1>', mouse_down_action)
-root.bind('<ButtonRelease-1>', mouse_up_action)
-root.bind('<Motion>', motion_action)
-root.bind('<MouseWheel>', scroll_action)
+root.bind('<ButtonPress-1>', mouse_down_action) #detect mouse down call function mouse_down
+root.bind('<ButtonRelease-1>', mouse_up_action) #detect mouse up call function mouse_up
+root.bind('<Motion>', motion_action) #detect mouse motion call function motion
+root.bind('<MouseWheel>', scroll_action) #detect mouse scroll call function scroll
 root.bind('<Control-z>', undo_action)
 root.bind('<c>', color_choose)
 root.bind('<Control-Delete>', clear)
@@ -257,4 +256,4 @@ if not OFFLINE:
     root.after(1, draw)
     Thread(target=socket, daemon=True).start()
 
-turtle.mainloop()
+turtle.mainloop() #turtle loop
