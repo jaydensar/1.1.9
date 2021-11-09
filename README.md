@@ -14,6 +14,10 @@ Note that the drawings on the public instance are not moderated in any way, and 
 
 Run `server.py`. Then, change the `INSTANCE` variable in `main.py` with the IP of the machine running `server.py`. You may have to forward port `8765`. After doing that, you can run `main.py`.
 
+### Offline mode
+
+Set the `OFFLINE` variable in `main.py` to `True`. Then, run `main.py`.
+
 ## Using the program
 
 Simply just start using it like any drawing program.
