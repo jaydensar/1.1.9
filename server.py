@@ -1,10 +1,42 @@
-import websockets
 import asyncio
 import json
+
+import websockets
+from jsonschema import validate
 
 clients = set()
 
 msgs = []
+
+schemas = {
+    "update": {
+        "type": "object",
+        "properties": {
+            "type": {"type": "string"},
+            "x": {"type": "number"},
+            "y": {"type": "number"},
+            "pen_down": {"type": "boolean"},
+            "pen_size": {"type": "number"},
+            "color": {"type": "string"},
+            "socket_id": {"type": "string"}
+        }
+    },
+    "undo": {
+        "type": "object",
+        "properties": {
+            "type": {"type": "string"},
+            "count": {"type": "number"},
+            "socket_id": {"type": "string"}
+        }
+    },
+    "clear": {
+        "type": "object",
+        "properties": {
+            "type": {"type": "string"},
+            "socket_id": {"type": "string"}
+        }
+    }
+}
 
 
 async def handler(websocket, path):
@@ -13,9 +45,13 @@ async def handler(websocket, path):
     await websocket.send(json.dumps({'type': 'init', 'data': msgs}))
     try:
         async for msg in websocket:
+            valid = False
+            try:
+                data = json.loads(msg)
+                validate(data, schemas[data['type']])
+            except:
+                continue
             msgs.append(msg)
-            if ("reset" in msg):
-                msgs = []
             await asyncio.gather(
                 *[ws.send(msg) for ws in clients],
                 return_exceptions=False,
