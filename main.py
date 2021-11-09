@@ -8,7 +8,8 @@ from queue import Queue, Empty
 from tkinter import colorchooser
 
 # configurable options
-PRECISION = 1 # make value higher if there are performance issues
+PRECISION = 1 # make value higher if there are performance issues; 
+              # you may also need to make this value 5 or higher on Unix-based operating systems
 OFFLINE = False  # skip connecting to websocket server
 LOAD_PREVIOUS = True  # whether or not to load people's previous drawings
 
@@ -228,6 +229,7 @@ def draw():
 
     if data['type'] == 'clear':
         turtle.clear()
+        replayer_turtle.clear()
         turtle_array = list(remote_turtles.values())
         for remote_turtle in turtle_array:
             remote_turtle.clear()
