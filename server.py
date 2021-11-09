@@ -17,7 +17,7 @@ schemas = {
             "y": {"type": "number"},
             "pen_down": {"type": "boolean"},
             "pen_size": {"type": "number"},
-            "color": {"type": "string"},
+            "color": {"type": "array"},
             "socket_id": {"type": "string"}
         }
     },
@@ -25,8 +25,8 @@ schemas = {
         "type": "object",
         "properties": {
             "type": {"type": "string"},
-            "count": {"type": "number"},
-            "socket_id": {"type": "string"}
+            "socket_id": {"type": "string"},
+            "count": {"type": "number"}
         }
     },
     "clear": {
