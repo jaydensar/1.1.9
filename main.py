@@ -1,11 +1,11 @@
 import json
-import uuid
 import turtle
-import websocket
-
+import uuid
+from queue import Empty, Queue
 from threading import Thread
-from queue import Queue, Empty
 from tkinter import colorchooser
+
+import websocket
 
 # configurable options
 PRECISION = 1 # make value higher if there are performance issues; 
@@ -23,7 +23,7 @@ stroke_history = [0]
 precision = int(PRECISION)
 root = turtle.getcanvas().winfo_toplevel()
 
-remote_turtles: dict[str, turtle.Turtle] = {}
+remote_turtles = {}
 
 # initial state
 def init_turtle(turtle: turtle.Turtle, color="blue", shape="circle", pensize=2):
