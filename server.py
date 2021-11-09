@@ -45,10 +45,11 @@ async def handler(websocket, path):
     await websocket.send(json.dumps({'type': 'init', 'data': msgs}))
     try:
         async for msg in websocket:
-            valid = False
             try:
                 data = json.loads(msg)
                 validate(data, schemas[data['type']])
+                if (data['type'] == 'reset'):
+                    msgs = []
             except:
                 continue
             msgs.append(msg)
