@@ -34,7 +34,6 @@ def init_turtle(turtle: turtle.Turtle, color="blue", shape="circle", pensize=2):
     turtle.shapesize(turtle.pensize()*0.05)
 
 
-root.config(cursor="none")
 init_turtle(turtle)
 turtle.tracer(0)
 turtle.update()
