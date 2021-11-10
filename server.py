@@ -52,7 +52,8 @@ async def handler(websocket, path):
                     msgs = []
             except:
                 continue
-            msgs.append(msg)
+            if (data['type'] != "clear"):
+                msgs.append(msg)
             await asyncio.gather(
                 *[ws.send(msg) for ws in clients],
                 return_exceptions=False,
