@@ -62,21 +62,23 @@ async def handler(websocket, path):
     await websocket.send(json.dumps({'type': 'init', 'data': msgs}))
     try:
         async for msg in websocket:
+            data = None
             try:
                 data = json.loads(msg)
                 validate(data, schemas[data['type']])
-                if (data['type'] == 'reset'):
-                    msgs = []
             except ValidationError as err:
                 print("Invalid json data passed; schema incorrect: ", err)
                 continue
             except json.JSONDecodeError as err:
                 print("Invalid json data passed; not json: ", err)
+                continue
             except:
                 print("Something went wrong, ignoring data from ", websocket)
+                continue
 
-            if (data['type'] != "clear"):
-                msgs.append(msg)
+            if (data['type'] == "clear"):
+                msgs = []
+
             await asyncio.gather(
                 *[ws.send(msg) for ws in clients],
                 return_exceptions=False,
