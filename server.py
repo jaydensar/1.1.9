@@ -2,7 +2,7 @@ import asyncio
 import json
 
 import websockets
-from jsonschema import validate
+from jsonschema import ValidationError, validate
 
 clients = set()
 
@@ -13,28 +13,45 @@ schemas = {
         "type": "object",
         "properties": {
             "type": {"type": "string"},
-            "x": {"type": "number"},
-            "y": {"type": "number"},
+            "x": {"type": "number", "minimum": -100000, "maximum": 100000},
+            "y": {"type": "number", "minimum": -100000, "maximum": 100000},
             "pen_down": {"type": "boolean"},
-            "pen_size": {"type": "number"},
-            "color": {"type": "array"},
-            "socket_id": {"type": "string"}
-        }
+            "pen_size": {"type": "integer", "minimum": 0, "maximum": 100},
+            "color": {
+                "type": "array",
+                "items": {
+                    "type": ["array", "string"],
+                    "pattern": "white|black|red|green|blue|cyan|yellow|magenta",
+                    "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                    }
+                }
+            },
+            "socket_id": {"type": "string", "format": "uuid"},
+        },
+        "additionalProperties": False,
+        "minProperties": 7
     },
     "undo": {
         "type": "object",
         "properties": {
             "type": {"type": "string"},
-            "socket_id": {"type": "string"},
-            "count": {"type": "number"}
-        }
+            "socket_id": {"type": "string", "format": "uuid"},
+            "count": {"type": "integer", "minimum": 0, "maximum": 1000}
+        },
+        "additionalProperties": False,
+        "minProperties": 3
     },
     "clear": {
         "type": "object",
         "properties": {
             "type": {"type": "string"},
-            "socket_id": {"type": "string"}
-        }
+            "socket_id": {"type": "string", "format": "uuid"}
+        },
+        "additionalProperties": False,
+        "minProperties": 2
     }
 }
 
@@ -50,8 +67,14 @@ async def handler(websocket, path):
                 validate(data, schemas[data['type']])
                 if (data['type'] == 'reset'):
                     msgs = []
-            except:
+            except ValidationError as err:
+                print("Invalid json data passed; schema incorrect: ", err)
                 continue
+            except json.JSONDecodeError as err:
+                print("Invalid json data passed; not json: ", err)
+            except:
+                print("Something went wrong, ignoring data from ", websocket)
+
             if (data['type'] != "clear"):
                 msgs.append(msg)
             await asyncio.gather(
